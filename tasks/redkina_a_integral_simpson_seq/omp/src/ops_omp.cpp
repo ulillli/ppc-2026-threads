@@ -14,7 +14,7 @@ namespace redkina_a_integral_simpson_seq {
 
 namespace {
 
-constexpr size_t kMaxDim = 10;  // максимальная поддерживаемая размерность (можно увеличить)
+constexpr size_t kMaxDim = 10;  // максимальная размерность (достаточно для тестов)
 
 inline int SimpsonCoeff(int idx, int n) {
   if (idx == 0 || idx == n) {
@@ -42,6 +42,9 @@ bool AdvanceIndicesFromLevel(std::array<int, kMaxDim> &indices, const std::vecto
 RedkinaAIntegralSimpsonOMP::RedkinaAIntegralSimpsonOMP(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
+  // Инициализация OpenMP до начала тестов, чтобы выделения памяти произошли один раз
+  static const int dummy = omp_get_max_threads();
+  (void)dummy;
 }
 
 bool RedkinaAIntegralSimpsonOMP::ValidationImpl() {
@@ -52,7 +55,7 @@ bool RedkinaAIntegralSimpsonOMP::ValidationImpl() {
     return false;
   }
   if (dim > kMaxDim) {
-    return false;  // превышение максимальной размерности
+    return false;  // превышение допустимой размерности
   }
 
   for (size_t i = 0; i < dim; ++i) {
@@ -108,8 +111,8 @@ bool RedkinaAIntegralSimpsonOMP::RunImpl() {
     double coeff0 = SimpsonCoeff(i0, static_cast<int>(n_ref[0]));
     double local_sum = 0.0;
 
-    // Вектор для координат точки – создаётся один раз на итерацию внешнего цикла
-    std::vector<double> point(dim_local);
+    // Точка хранится на стеке (std::array)
+    std::array<double, kMaxDim> point_arr{};
     std::array<int, kMaxDim> indices{};
 
     indices[0] = i0;
@@ -118,16 +121,18 @@ bool RedkinaAIntegralSimpsonOMP::RunImpl() {
     }
 
     do {
-      point[0] = a_ref[0] + static_cast<double>(i0) * h_ref[0];
+      point_arr[0] = a_ref[0] + static_cast<double>(i0) * h_ref[0];
 
       double w_prod = 1.0;
       for (size_t d = 1; d < dim_local; ++d) {
         int idx = indices[d];
-        point[d] = a_ref[d] + static_cast<double>(idx) * h_ref[d];
+        point_arr[d] = a_ref[d] + static_cast<double>(idx) * h_ref[d];
         int w = SimpsonCoeff(idx, static_cast<int>(n_ref[d]));
         w_prod *= static_cast<double>(w);
       }
 
+      // Создаём временный вектор только для вызова func_
+      std::vector<double> point(point_arr.begin(), point_arr.begin() + static_cast<ptrdiff_t>(dim_local));
       local_sum += coeff0 * w_prod * func_ref(point);
     } while (AdvanceIndicesFromLevel(indices, n_ref, 1, dim_local));
 
