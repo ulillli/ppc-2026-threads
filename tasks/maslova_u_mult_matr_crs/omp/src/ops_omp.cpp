@@ -1,6 +1,7 @@
 #include "maslova_u_mult_matr_crs/omp/include/ops_omp.hpp"
 
 #include <omp.h>
+
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -20,9 +21,15 @@ bool MaslovaUMultMatrOMP::ValidationImpl() {
   const auto &a = std::get<0>(input);
   const auto &b = std::get<1>(input);
 
-  if (a.cols != b.rows || a.rows <= 0 || b.cols <= 0) return false;
-  if (a.row_ptr.size() != static_cast<size_t>(a.rows) + 1) return false;
-  if (b.row_ptr.size() != static_cast<size_t>(b.rows) + 1) return false;
+  if (a.cols != b.rows || a.rows <= 0 || b.cols <= 0) {
+    return false;
+  }
+  if (a.row_ptr.size() != static_cast<size_t>(a.rows) + 1) {
+    return false;
+  }
+  if (b.row_ptr.size() != static_cast<size_t>(b.rows) + 1) {
+    return false;
+  }
   return true;
 }
 
