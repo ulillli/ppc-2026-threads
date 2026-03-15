@@ -3,8 +3,8 @@
 #include <cstddef>
 
 #include "morozova_s_strassen_multiplication/common/include/common.hpp"
+#include "morozova_s_strassen_multiplication/omp/include/ops_omp.hpp"
 #include "morozova_s_strassen_multiplication/seq/include/ops_seq.hpp"
-#include "morozova_s_strassen_multiplication/omp/include/ops_omp.hpp" 
 #include "util/include/perf_test_util.hpp"
 
 namespace morozova_s_strassen_multiplication {
@@ -52,7 +52,7 @@ class MorozovaSStrassenMultiplicationPerfTest : public ppc::util::BaseRunPerfTes
 
 namespace {
 
-using MorozovaSStrassenMultiplicationSEQPerfTest = 
+using MorozovaSStrassenMultiplicationSEQPerfTest =
     MorozovaSStrassenMultiplicationPerfTest<MorozovaSStrassenMultiplicationSEQ>;
 
 TEST_P(MorozovaSStrassenMultiplicationSEQPerfTest, RunPerfModes) {
@@ -65,10 +65,10 @@ const auto kAllPerfTasksSEQ = ppc::util::MakeAllPerfTasks<InType, MorozovaSStras
 const auto kGtestValuesSEQ = ppc::util::TupleToGTestValues(kAllPerfTasksSEQ);
 const auto kPerfTestNameSEQ = MorozovaSStrassenMultiplicationSEQPerfTest::CustomPerfTestName;
 
-INSTANTIATE_TEST_SUITE_P(StrassenMultiplicationSEQPerfTests, MorozovaSStrassenMultiplicationSEQPerfTest, 
+INSTANTIATE_TEST_SUITE_P(StrassenMultiplicationSEQPerfTests, MorozovaSStrassenMultiplicationSEQPerfTest,
                          kGtestValuesSEQ, kPerfTestNameSEQ);
 
-using MorozovaSStrassenMultiplicationOMPPerfTest = 
+using MorozovaSStrassenMultiplicationOMPPerfTest =
     MorozovaSStrassenMultiplicationPerfTest<MorozovaSStrassenMultiplicationOMP>;
 
 TEST_P(MorozovaSStrassenMultiplicationOMPPerfTest, RunPerfModes) {
@@ -81,9 +81,9 @@ const auto kAllPerfTasksOMP = ppc::util::MakeAllPerfTasks<InType, MorozovaSStras
 const auto kGtestValuesOMP = ppc::util::TupleToGTestValues(kAllPerfTasksOMP);
 const auto kPerfTestNameOMP = MorozovaSStrassenMultiplicationOMPPerfTest::CustomPerfTestName;
 
-INSTANTIATE_TEST_SUITE_P(StrassenMultiplicationOMPPerfTests, MorozovaSStrassenMultiplicationOMPPerfTest, 
+INSTANTIATE_TEST_SUITE_P(StrassenMultiplicationOMPPerfTests, MorozovaSStrassenMultiplicationOMPPerfTest,
                          kGtestValuesOMP, kPerfTestNameOMP);
 
-}
+}  // namespace
 
-}
+}  // namespace morozova_s_strassen_multiplication

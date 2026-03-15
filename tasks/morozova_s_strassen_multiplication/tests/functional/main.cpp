@@ -8,8 +8,8 @@
 #include <tuple>
 
 #include "morozova_s_strassen_multiplication/common/include/common.hpp"
-#include "morozova_s_strassen_multiplication/seq/include/ops_seq.hpp"
 #include "morozova_s_strassen_multiplication/omp/include/ops_omp.hpp"
+#include "morozova_s_strassen_multiplication/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
 #include "util/include/util.hpp"
 
@@ -219,7 +219,7 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
 
 namespace {
 
-using MorozovaSStrassenMultiplicationSEQFuncTests = 
+using MorozovaSStrassenMultiplicationSEQFuncTests =
     MorozovaSStrassenMultiplicationFuncTests<MorozovaSStrassenMultiplicationSEQ>;
 
 TEST_P(MorozovaSStrassenMultiplicationSEQFuncTests, MatrixMultiplication) {
@@ -238,10 +238,10 @@ const auto kGtestValuesSEQ = ppc::util::ExpandToValues(kTestTasksSEQ);
 const auto kPerfTestNameSEQ =
     MorozovaSStrassenMultiplicationSEQFuncTests::PrintFuncTestName<MorozovaSStrassenMultiplicationSEQFuncTests>;
 
-INSTANTIATE_TEST_SUITE_P(StrassenMultiplicationSEQTests, MorozovaSStrassenMultiplicationSEQFuncTests, 
-                         kGtestValuesSEQ, kPerfTestNameSEQ);
+INSTANTIATE_TEST_SUITE_P(StrassenMultiplicationSEQTests, MorozovaSStrassenMultiplicationSEQFuncTests, kGtestValuesSEQ,
+                         kPerfTestNameSEQ);
 
-using MorozovaSStrassenMultiplicationOMPFuncTests = 
+using MorozovaSStrassenMultiplicationOMPFuncTests =
     MorozovaSStrassenMultiplicationFuncTests<MorozovaSStrassenMultiplicationOMP>;
 
 TEST_P(MorozovaSStrassenMultiplicationOMPFuncTests, MatrixMultiplication) {
@@ -255,9 +255,9 @@ const auto kGtestValuesOMP = ppc::util::ExpandToValues(kTestTasksOMP);
 const auto kPerfTestNameOMP =
     MorozovaSStrassenMultiplicationOMPFuncTests::PrintFuncTestName<MorozovaSStrassenMultiplicationOMPFuncTests>;
 
-INSTANTIATE_TEST_SUITE_P(StrassenMultiplicationOMPTests, MorozovaSStrassenMultiplicationOMPFuncTests, 
-                         kGtestValuesOMP, kPerfTestNameOMP);
+INSTANTIATE_TEST_SUITE_P(StrassenMultiplicationOMPTests, MorozovaSStrassenMultiplicationOMPFuncTests, kGtestValuesOMP,
+                         kPerfTestNameOMP);
 
-}
+}  // namespace
 
-}
+}  // namespace morozova_s_strassen_multiplication

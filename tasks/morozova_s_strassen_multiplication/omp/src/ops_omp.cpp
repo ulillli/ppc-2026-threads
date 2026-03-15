@@ -1,10 +1,10 @@
 #include "morozova_s_strassen_multiplication/omp/include/ops_omp.hpp"
 
+#include <omp.h>
+
 #include <cmath>
 #include <cstddef>
 #include <vector>
-
-#include <omp.h>
 
 #include "morozova_s_strassen_multiplication/common/include/common.hpp"
 
@@ -16,7 +16,7 @@ Matrix AddMatrixImpl(const Matrix &a, const Matrix &b) {
   int n = a.size;
   Matrix result(n);
 
-  #pragma omp parallel for collapse(2) schedule(static)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < n; ++j) {
       result(i, j) = a(i, j) + b(i, j);
@@ -30,7 +30,7 @@ Matrix SubtractMatrixImpl(const Matrix &a, const Matrix &b) {
   int n = a.size;
   Matrix result(n);
 
-  #pragma omp parallel for collapse(2) schedule(static)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < n; ++j) {
       result(i, j) = a(i, j) - b(i, j);
@@ -44,7 +44,7 @@ Matrix MultiplyStandardImpl(const Matrix &a, const Matrix &b) {
   int n = a.size;
   Matrix result(n);
 
-  #pragma omp parallel for collapse(2) schedule(dynamic, 1)
+#pragma omp parallel for collapse(2) schedule(dynamic, 1)
   for (int i = 0; i < n; ++i) {
     for (int j = 0; j < n; ++j) {
       double sum = 0.0;
@@ -77,7 +77,7 @@ Matrix MergeMatricesImpl(const Matrix &m11, const Matrix &m12, const Matrix &m21
   int n = 2 * half;
   Matrix result(n);
 
-  #pragma omp parallel for collapse(2) schedule(static)
+#pragma omp parallel for collapse(2) schedule(static)
   for (int i = 0; i < half; ++i) {
     for (int j = 0; j < half; ++j) {
       result(i, j) = m11(i, j);
@@ -94,9 +94,9 @@ Matrix MultiplyStandardParallelImpl(const Matrix &a, const Matrix &b) {
   int n = a.size;
   Matrix result(n);
 
-  #pragma omp parallel
+#pragma omp parallel
   {
-    #pragma omp for collapse(2) schedule(dynamic, 1)
+#pragma omp for collapse(2) schedule(dynamic, 1)
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < n; ++j) {
         double sum = 0.0;
@@ -111,7 +111,7 @@ Matrix MultiplyStandardParallelImpl(const Matrix &a, const Matrix &b) {
   return result;
 }
 
-}
+}  // namespace
 
 MorozovaSStrassenMultiplicationOMP::MorozovaSStrassenMultiplicationOMP(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
@@ -225,8 +225,8 @@ Matrix MorozovaSStrassenMultiplicationOMP::MultiplyStrassen(const Matrix &a, con
   return MultiplyStrassenParallel(a, b, leaf_size, 0);
 }
 
-Matrix MorozovaSStrassenMultiplicationOMP::MultiplyStrassenParallel(const Matrix &a, const Matrix &b, 
-                                                                     int leaf_size, int depth) {
+Matrix MorozovaSStrassenMultiplicationOMP::MultiplyStrassenParallel(const Matrix &a, const Matrix &b, int leaf_size,
+                                                                    int depth) {
   int n = a.size;
 
   if (n <= leaf_size || n % 2 != 0) {
@@ -250,27 +250,27 @@ Matrix MorozovaSStrassenMultiplicationOMP::MultiplyStrassenParallel(const Matrix
   Matrix p1, p2, p3, p4, p5, p6, p7;
 
   if (depth < MAX_PARALLEL_DEPTH) {
-    #pragma omp parallel sections
+#pragma omp parallel sections
     {
-      #pragma omp section
+#pragma omp section
       p1 = MultiplyStrassenParallel(a11, SubtractMatrix(b12, b22), leaf_size, depth + 1);
-      
-      #pragma omp section
+
+#pragma omp section
       p2 = MultiplyStrassenParallel(AddMatrix(a11, a12), b22, leaf_size, depth + 1);
-      
-      #pragma omp section
+
+#pragma omp section
       p3 = MultiplyStrassenParallel(AddMatrix(a21, a22), b11, leaf_size, depth + 1);
-      
-      #pragma omp section
+
+#pragma omp section
       p4 = MultiplyStrassenParallel(a22, SubtractMatrix(b21, b11), leaf_size, depth + 1);
-      
-      #pragma omp section
+
+#pragma omp section
       p5 = MultiplyStrassenParallel(AddMatrix(a11, a22), AddMatrix(b11, b22), leaf_size, depth + 1);
-      
-      #pragma omp section
+
+#pragma omp section
       p6 = MultiplyStrassenParallel(SubtractMatrix(a12, a22), AddMatrix(b21, b22), leaf_size, depth + 1);
-      
-      #pragma omp section
+
+#pragma omp section
       p7 = MultiplyStrassenParallel(SubtractMatrix(a11, a21), AddMatrix(b11, b12), leaf_size, depth + 1);
     }
   } else {
@@ -295,4 +295,4 @@ Matrix MorozovaSStrassenMultiplicationOMP::MultiplyStandardParallel(const Matrix
   return MultiplyStandardParallelImpl(a, b);
 }
 
-}
+}  // namespace morozova_s_strassen_multiplication
