@@ -45,12 +45,17 @@ double KiselevITestTaskOMP::ComputeIntegral(const std::vector<int> &steps) {
   double hx = (GetInput().right_bounds[0] - GetInput().left_bounds[0]) / steps[0];
   double hy = (GetInput().right_bounds[1] - GetInput().left_bounds[1]) / steps[1];
 
+  const double x0 = GetInput().left_bounds[0];
+  const double y0 = GetInput().left_bounds[1];
+
   int nx = steps[0];
   int ny = steps[1];
 
-#pragma omp parallel for reduction(+ : result) collapse(2)
-  for (int i = 0; i <= nx; i++) {
-    for (int j = 0; j <= ny; j++) {
+  const int func_type = GetInput().type_function;
+
+#pragma omp parallel for reduction(+ : result) default(none) shared(nx, ny, hx, hy, x0, y0, func_type)
+  for (int i = 0; i < nx + 1; i++) {
+    for (int j = 0; j < ny + 1; j++) {
       double x = GetInput().left_bounds[0] + (i * hx);
       double y = GetInput().left_bounds[1] + (j * hy);
 
