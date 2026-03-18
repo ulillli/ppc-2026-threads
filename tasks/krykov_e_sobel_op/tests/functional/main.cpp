@@ -108,7 +108,9 @@ const std::array<TestType, 3> kTestParam = {std::make_tuple(0, "ConstantImage"),
                                             std::make_tuple(2, "HorizontalEdge")};
 
 const auto kTestTasksList =
-    std::tuple_cat(ppc::util::AddFuncTask<KrykovESobelOpSEQ, InType>(kTestParam, PPC_SETTINGS_krykov_e_sobel_op));
+    std::tuple_cat(ppc::util::AddFuncTask<KrykovESobelOpSEQ, InType>(kTestParam, PPC_SETTINGS_krykov_e_sobel_op),
+
+                   ppc::util::AddFuncTask<KrykovESobelOpOMP, InType>(kTestParam, PPC_SETTINGS_krykov_e_sobel_op));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 

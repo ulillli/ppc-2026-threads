@@ -47,7 +47,8 @@ TEST_P(KrykovERunPerfTestThreads, RunPerfModes) {
 
 namespace {
 
-const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, KrykovESobelOpSEQ>(PPC_SETTINGS_krykov_e_sobel_op);
+const auto kAllPerfTasks =
+    ppc::util::MakeAllPerfTasks<InType, KrykovESobelOpSEQ, KrykovESobelOpOMP>(PPC_SETTINGS_krykov_e_sobel_op);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
