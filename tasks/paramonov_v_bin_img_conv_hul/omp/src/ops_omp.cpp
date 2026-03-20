@@ -108,13 +108,12 @@ void ConvexHullOMP::ExtractConnectedComponents() {
   std::vector<std::vector<PixelPoint>> components;
   std::vector<std::pair<int, int>> start_points;
 
-  // Сохраняем ссылки на данные для использования в OpenMP
   auto &pixels = working_image_.pixels;
 
 #pragma omp parallel for default(none) shared(rows, cols, pixels, visited, start_points)
   for (int row = 0; row < rows; ++row) {
     for (int col = 0; col < cols; ++col) {
-      size_t idx = static_cast<size_t>(row) * static_cast<size_t>(cols) + static_cast<size_t>(col);
+      size_t idx = (static_cast<size_t>(row) * static_cast<size_t>(cols)) + static_cast<size_t>(col);
       if (pixels[idx] == 255 && !visited[idx]) {
 #pragma omp critical
         {
@@ -128,8 +127,7 @@ void ConvexHullOMP::ExtractConnectedComponents() {
   }
 
 #pragma omp parallel for default(none) shared(start_points, total_pixels, rows, cols, pixels, components, kNeighbors)
-  for (size_t i = 0; i < start_points.size(); ++i) {
-    const auto &start_point = start_points[i];
+  for (const auto &start_point : start_points) {
     int start_row = start_point.first;
     int start_col = start_point.second;
 
@@ -138,7 +136,7 @@ void ConvexHullOMP::ExtractConnectedComponents() {
 
     std::stack<PixelPoint> pixel_stack;
     pixel_stack.emplace(start_row, start_col);
-    local_visited[static_cast<size_t>(start_row) * static_cast<size_t>(cols) + static_cast<size_t>(start_col)] = true;
+    local_visited[(static_cast<size_t>(start_row) * static_cast<size_t>(cols)) + static_cast<size_t>(start_col)] = true;
 
     while (!pixel_stack.empty()) {
       PixelPoint current = pixel_stack.top();
@@ -150,7 +148,7 @@ void ConvexHullOMP::ExtractConnectedComponents() {
         int next_col = current.col + dc;
 
         if (next_row >= 0 && next_row < rows && next_col >= 0 && next_col < cols) {
-          size_t idx = static_cast<size_t>(next_row) * static_cast<size_t>(cols) + static_cast<size_t>(next_col);
+          size_t idx = (static_cast<size_t>(next_row) * static_cast<size_t>(cols)) + static_cast<size_t>(next_col);
           if (!local_visited[idx] && pixels[idx] == 255) {
             local_visited[idx] = true;
             pixel_stack.emplace(next_row, next_col);
