@@ -9,12 +9,7 @@
 #include <tuple>
 #include <vector>
 
-#include "kopilov_d_vertical_gauss_filter/common/include/common.hpp"
-<<<<<<< HEAD
 #include "kopilov_d_vertical_gauss_filter/omp/include/ops_omp.hpp"
-    == == ==
-    =
->>>>>>> f57718ccc1fb28b1e51c034d2c5ed5e39d12081c
 #include "kopilov_d_vertical_gauss_filter/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
 #include "util/include/util.hpp"
@@ -93,13 +88,10 @@
       params.emplace_back([](const InType &in) -> std::shared_ptr<BaseTask> {
         return std::make_shared<KopilovDVerticalGaussFilterSEQ>(in);
       }, "seq", test_case);
-<<<<<<< HEAD
 
       params.emplace_back([](const InType &in) -> std::shared_ptr<BaseTask> {
         return std::make_shared<KopilovDVerticalGaussFilterOMP>(in);
       }, "omp", test_case);
-=======
->>>>>>> f57718ccc1fb28b1e51c034d2c5ed5e39d12081c
     }
     return params;
   }
@@ -113,10 +105,7 @@
 
   }  // namespace
 
-<<<<<<< HEAD
   /*****SEQ*****/
-=======
->>>>>>> f57718ccc1fb28b1e51c034d2c5ed5e39d12081c
   TEST(KopilovDVerticalGaussFilterInvalidInputTest, ZeroSizes) {
     Matrix input;
     input.width = 0;
@@ -171,7 +160,6 @@
     EXPECT_FALSE(task->Validation());
   }
 
-<<<<<<< HEAD
   /*****OMP*****/
   TEST(KopilovDVerticalGaussFilterInvalidInputTestOMP, ZeroSizes) {
     Matrix input;
@@ -226,7 +214,4 @@
     auto task = std::make_shared<KopilovDVerticalGaussFilterOMP>(input);
     EXPECT_FALSE(task->Validation());
   }
-
-=======
->>>>>>> f57718ccc1fb28b1e51c034d2c5ed5e39d12081c
 }  // namespace kopilov_d_vertical_gauss_filter
