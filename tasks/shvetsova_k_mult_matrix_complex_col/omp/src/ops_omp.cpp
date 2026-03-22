@@ -1,7 +1,6 @@
 #include "../../omp/include/ops_omp.hpp"
 
 #include <complex>
-#include <cstddef>
 #include <vector>
 
 #include "omp.h"
@@ -49,7 +48,7 @@ bool ShvetsovaKMultMatrixComplexOMP::RunImpl() {
     std::vector<std::complex<double>> column_c(matrix_a.rows, {0.0, 0.0});
 #pragma omp for
     for (int i = 0; i < matrix_b.cols; i++) {
-      std::fill(column_c.begin(), column_c.end(), std::complex<double>(0.0, 0.0));
+      std::ranges::fill(column_c, std::complex<double>(0.0, 0.0));
       ;
       for (int j = matrix_b.col_ptr[i]; j < matrix_b.col_ptr[i + 1]; j++) {
         int tmp_ind = matrix_b.row_ind[j];
@@ -61,10 +60,10 @@ bool ShvetsovaKMultMatrixComplexOMP::RunImpl() {
         }
       }
 
-      for (int r = 0; r < static_cast<int>(column_c.size()); ++r) {
-        if (column_c[r].real() != 0.0 || column_c[r].imag() != 0.0) {
-          columns_c[i].rows.push_back(r);
-          columns_c[i].vals.push_back(column_c[r]);
+      for (int index = 0; index < static_cast<int>(column_c.size()); ++index) {
+        if (column_c[index].real() != 0.0 || column_c[index].imag() != 0.0) {
+          columns_c[i].rows.push_back(index);
+          columns_c[i].vals.push_back(column_c[index]);
         }
       }
     }
