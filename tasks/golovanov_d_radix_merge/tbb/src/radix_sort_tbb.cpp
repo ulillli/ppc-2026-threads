@@ -131,13 +131,11 @@ void RadixSortTBB::Sort(std::vector<double> &arr) {
     begin += block_size;
   }
 
-  tbb::parallel_for(
-      tbb::blocked_range<std::size_t>(0, ranges.size()),
-      [&](const tbb::blocked_range<std::size_t> &r) {
-        for (std::size_t i = r.begin(); i < r.end(); ++i) {
-          SortRange(arr, ranges[i].first, ranges[i].second);
-        }
-      });
+  tbb::parallel_for(tbb::blocked_range<std::size_t>(0, ranges.size()), [&](const tbb::blocked_range<std::size_t> &r) {
+    for (std::size_t i = r.begin(); i < r.end(); ++i) {
+      SortRange(arr, ranges[i].first, ranges[i].second);
+    }
+  });
 
   std::vector<std::vector<double>> parts(num_threads);
   for (int i = 0; i < num_threads; ++i) {
@@ -149,13 +147,11 @@ void RadixSortTBB::Sort(std::vector<double> &arr) {
     std::size_t pair_count = parts.size() / 2;
     std::vector<std::vector<double>> next((parts.size() + 1) / 2);
 
-    tbb::parallel_for(
-        tbb::blocked_range<std::size_t>(0, pair_count),
-        [&](const tbb::blocked_range<std::size_t> &r) {
-          for (std::size_t i = r.begin(); i < r.end(); ++i) {
-            next[i] = Merge(parts[2 * i], parts[(2 * i) + 1]);
-          }
-        });
+    tbb::parallel_for(tbb::blocked_range<std::size_t>(0, pair_count), [&](const tbb::blocked_range<std::size_t> &r) {
+      for (std::size_t i = r.begin(); i < r.end(); ++i) {
+        next[i] = Merge(parts[2 * i], parts[(2 * i) + 1]);
+      }
+    });
 
     if (parts.size() % 2 != 0) {
       next.back() = std::move(parts.back());
