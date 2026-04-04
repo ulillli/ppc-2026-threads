@@ -31,18 +31,18 @@ bool PapulinaYRadixSortTBB::PreProcessingImpl() {
 
 bool PapulinaYRadixSortTBB::RunImpl() {
   double *result = GetInput().data();
-    size_t size = GetInput().size();
-    
-    ParallelRadixSort(result, static_cast<int>(size));
-    
-    GetOutput() = std::vector<double>(size);
-    for (size_t i = 0; i < size; i++) {
-        //std::cout << result[i] << " ";
-        GetOutput()[i] = result[i];
-    }
-    //std::cout << std::endl;
-    
-    return true;
+  size_t size = GetInput().size();
+
+  ParallelRadixSort(result, static_cast<int>(size));
+
+  GetOutput() = std::vector<double>(size);
+  for (size_t i = 0; i < size; i++) {
+    // std::cout << result[i] << " ";
+    GetOutput()[i] = result[i];
+  }
+  // std::cout << std::endl;
+
+  return true;
 }
 
 bool PapulinaYRadixSortTBB::PostProcessingImpl() {
@@ -69,81 +69,77 @@ double PapulinaYRadixSortTBB::FromBytes(uint64_t bits) {
   return d;
 }
 void PapulinaYRadixSortTBB::ParallelSortByByte(uint64_t *bytes, uint64_t *out, int byte, int size) {
-    auto *byte_view = reinterpret_cast<unsigned char *>(bytes);
-    std::array<int, 256> global_counter = {0};
-    
-    tbb::parallel_for(tbb::blocked_range<int>(0, size),
-        [&](const tbb::blocked_range<int>& range) {
-            std::array<int, 256> local_counter = {0};
-            
-            for (int i = range.begin(); i != range.end(); ++i) {
-                int index = byte_view[(8 * i) + byte];
-                local_counter[index]++;
-            }
-            
-            for (int j = 0; j < 256; j++) {
-                if (local_counter[j] != 0) {
-                    std::atomic_ref<int> atomic_counter(global_counter[j]);
-                    atomic_counter += local_counter[j];
-                }
-            }
-        });
-    
-    int tmp = 0;
-    int j = 0;
-    for (; j < 256; j++) {
-        if (global_counter[j] != 0) {
-            tmp = global_counter[j];
-            global_counter[j] = 0;
-            j++;
-            break;
-        }
+  auto *byte_view = reinterpret_cast<unsigned char *>(bytes);
+  std::array<int, 256> global_counter = {0};
+
+  tbb::parallel_for(tbb::blocked_range<int>(0, size), [&](const tbb::blocked_range<int> &range) {
+    std::array<int, 256> local_counter = {0};
+
+    for (int i = range.begin(); i != range.end(); ++i) {
+      int index = byte_view[(8 * i) + byte];
+      local_counter[index]++;
     }
-    for (; j < 256; j++) {
-        int a = global_counter[j];
-        global_counter[j] = tmp;
-        tmp += a;
+
+    for (int j = 0; j < 256; j++) {
+      if (local_counter[j] != 0) {
+        std::atomic_ref<int> atomic_counter(global_counter[j]);
+        atomic_counter += local_counter[j];
+      }
     }
-    
-    std::array<std::atomic<int>, 256> atomic_offsets;
-    for (int i = 0; i < 256; i++) {
-        atomic_offsets[i] = global_counter[i];
+  });
+
+  int tmp = 0;
+  int j = 0;
+  for (; j < 256; j++) {
+    if (global_counter[j] != 0) {
+      tmp = global_counter[j];
+      global_counter[j] = 0;
+      j++;
+      break;
     }
-    
-    tbb::parallel_for(tbb::blocked_range<int>(0, size),
-        [&](const tbb::blocked_range<int>& range) {
-            for (int i = range.begin(); i != range.end(); ++i) {
-                int index = byte_view[(8 * i) + byte];
-                int pos = atomic_offsets[index].fetch_add(1);
-                out[pos] = bytes[i];
-            }
-        });
+  }
+  for (; j < 256; j++) {
+    int a = global_counter[j];
+    global_counter[j] = tmp;
+    tmp += a;
+  }
+
+  std::array<std::atomic<int>, 256> atomic_offsets;
+  for (int i = 0; i < 256; i++) {
+    atomic_offsets[i] = global_counter[i];
+  }
+
+  tbb::parallel_for(tbb::blocked_range<int>(0, size), [&](const tbb::blocked_range<int> &range) {
+    for (int i = range.begin(); i != range.end(); ++i) {
+      int index = byte_view[(8 * i) + byte];
+      int pos = atomic_offsets[index].fetch_add(1);
+      out[pos] = bytes[i];
+    }
+  });
 }
- void PapulinaYRadixSortTBB::ParallelRadixSort(double *arr, int size) {
-    std::vector<uint64_t> bytes(size);
-    std::vector<uint64_t> out(size);
+void PapulinaYRadixSortTBB::ParallelRadixSort(double *arr, int size) {
+  std::vector<uint64_t> bytes(size);
+  std::vector<uint64_t> out(size);
 
-    tbb::parallel_for(tbb::blocked_range<int>(0, size),
-        [&](const tbb::blocked_range<int>& range) {
-            for (int i = range.begin(); i != range.end(); ++i) {
-                bytes[i] = InBytes(arr[i]);
-            }
-        });
+  tbb::parallel_for(tbb::blocked_range<int>(0, size), [&](const tbb::blocked_range<int> &range) {
+    for (int i = range.begin(); i != range.end(); ++i) {
+      bytes[i] = InBytes(arr[i]);
+    }
+  });
 
-    ParallelSortByByte(bytes.data(), out.data(), 0, size);
-    ParallelSortByByte(out.data(), bytes.data(), 1, size);
-    ParallelSortByByte(bytes.data(), out.data(), 2, size);
-    ParallelSortByByte(out.data(), bytes.data(), 3, size);
-    ParallelSortByByte(bytes.data(), out.data(), 4, size);
-    ParallelSortByByte(out.data(), bytes.data(), 5, size);
-    ParallelSortByByte(bytes.data(), out.data(), 6, size);
-    ParallelSortByByte(out.data(), bytes.data(), 7, size);
-    
-    tbb::parallel_for(tbb::blocked_range<int>(0, size),
-        [&](const tbb::blocked_range<int>& range) {
-            for (int i = range.begin(); i != range.end(); ++i) {
-                arr[i] = FromBytes(bytes[i]);
-            }
-        });
+  ParallelSortByByte(bytes.data(), out.data(), 0, size);
+  ParallelSortByByte(out.data(), bytes.data(), 1, size);
+  ParallelSortByByte(bytes.data(), out.data(), 2, size);
+  ParallelSortByByte(out.data(), bytes.data(), 3, size);
+  ParallelSortByByte(bytes.data(), out.data(), 4, size);
+  ParallelSortByByte(out.data(), bytes.data(), 5, size);
+  ParallelSortByByte(bytes.data(), out.data(), 6, size);
+  ParallelSortByByte(out.data(), bytes.data(), 7, size);
+
+  tbb::parallel_for(tbb::blocked_range<int>(0, size), [&](const tbb::blocked_range<int> &range) {
+    for (int i = range.begin(); i != range.end(); ++i) {
+      arr[i] = FromBytes(bytes[i]);
+    }
+  });
 }
 }  // namespace papulina_y_radix_sort
