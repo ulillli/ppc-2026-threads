@@ -2,14 +2,16 @@
 
 #include <tbb/tbb.h>
 
+#include <array>
 #include <atomic>
-#include <iostream>
-#include <numeric>
-#include <util/include/util.hpp>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <vector>
 
-#include "papulina_y_radix_sort/common/include/common.hpp"
 #include "oneapi/tbb/parallel_for.h"
+#include "papulina_y_radix_sort/common/include/common.hpp"
 
 namespace papulina_y_radix_sort {
 
@@ -117,8 +119,7 @@ void PapulinaYRadixSortTBB::ParallelSortByByte(uint64_t *bytes, uint64_t *out, i
             }
         });
 }
-
-void PapulinaYRadixSortTBB::ParallelRadixSort(double *arr, int size) {
+ void PapulinaYRadixSortTBB::ParallelRadixSort(double *arr, int size) {
     std::vector<uint64_t> bytes(size);
     std::vector<uint64_t> out(size);
 

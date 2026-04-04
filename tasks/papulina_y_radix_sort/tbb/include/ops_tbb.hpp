@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 
 #include "papulina_y_radix_sort/common/include/common.hpp"
 #include "task/include/task.hpp"
@@ -20,10 +21,10 @@ class PapulinaYRadixSortTBB : public BaseTask {
   bool PostProcessingImpl() override;
 
   static const uint64_t kMask = 0x8000000000000000ULL;
-  void ParallelRadixSort(double *arr, int size);
-  void ParallelSortByByte(uint64_t *bytes, uint64_t *out, int byte, int size);
-  uint64_t InBytes(double d);
-  double FromBytes(uint64_t bits);
+  static void ParallelRadixSort(double *arr, int size);
+  static void ParallelSortByByte(uint64_t *bytes, uint64_t *out, int byte, int size);
+  static uint64_t InBytes(double d);
+  static double FromBytes(uint64_t bits);
 };
 
 }  // namespace papulina_y_radix_sort
