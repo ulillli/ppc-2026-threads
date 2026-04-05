@@ -42,8 +42,8 @@ TEST_P(PapulinaYRunPerfTestThreads, RunPerfModes) {
 
 namespace {
 
-const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, PapulinaYRadixSortSEQ>(PPC_SETTINGS_papulina_y_radix_sort);
+const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, PapulinaYRadixSortSEQ, PapulinaYRadixSortTBB>(
+    PPC_SETTINGS_papulina_y_radix_sort);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 

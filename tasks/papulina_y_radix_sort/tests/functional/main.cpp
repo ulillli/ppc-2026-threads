@@ -69,7 +69,8 @@ const std::array<TestType, 7> kTestParam = {
     std::make_tuple(std::vector<double>(10, 0.123456789), "test7")};
 
 const auto kTestTasksList = std::tuple_cat(
-    ppc::util::AddFuncTask<PapulinaYRadixSortSEQ, InType>(kTestParam, PPC_SETTINGS_papulina_y_radix_sort));
+    ppc::util::AddFuncTask<PapulinaYRadixSortSEQ, InType>(kTestParam, PPC_SETTINGS_papulina_y_radix_sort),
+    ppc::util::AddFuncTask<PapulinaYRadixSortTBB, InType>(kTestParam, PPC_SETTINGS_papulina_y_radix_sort));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 
