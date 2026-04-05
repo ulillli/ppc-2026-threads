@@ -2,8 +2,8 @@
 
 #include <tbb/tbb.h>
 
+#include <algorithm>
 #include <array>
-#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -37,11 +37,8 @@ bool PapulinaYRadixSortTBB::RunImpl() {
 
   GetOutput() = std::vector<double>(size);
   for (size_t i = 0; i < size; i++) {
-    // std::cout << result[i] << " ";
     GetOutput()[i] = result[i];
   }
-  // std::cout << std::endl;
-
   return true;
 }
 
@@ -70,49 +67,36 @@ double PapulinaYRadixSortTBB::FromBytes(uint64_t bits) {
 }
 void PapulinaYRadixSortTBB::ParallelSortByByte(uint64_t *bytes, uint64_t *out, int byte, int size) {
   auto *byte_view = reinterpret_cast<unsigned char *>(bytes);
-  std::array<int, 256> global_counter = {0};
+  int block_size = 2048; 
+  if(size <=100) {block_size = 4;}
+  const int num_blocks = (size + block_size - 1) / block_size;
 
-  tbb::parallel_for(tbb::blocked_range<int>(0, size), [&](const tbb::blocked_range<int> &range) {
-    std::array<int, 256> local_counter = {0};
+  std::vector<std::array<int, 256>> local_counts(num_blocks, std::array<int, 256>{0});
+  std::vector<std::array<int, 256>> local_offsets(num_blocks, std::array<int, 256>{0});
 
-    for (int i = range.begin(); i != range.end(); ++i) {
+  tbb::parallel_for(0, num_blocks, [&](int b) {
+    int start = b * block_size;
+    int end = std::min(start + block_size, size);
+    for (int i = start; i < end; ++i) {
       int index = byte_view[(8 * i) + byte];
-      local_counter[index]++;
-    }
-
-    for (int j = 0; j < 256; j++) {
-      if (local_counter[j] != 0) {
-        std::atomic_ref<int> atomic_counter(global_counter[j]);
-        atomic_counter += local_counter[j];
-      }
+      local_counts[b].at(index)++; 
     }
   });
 
-  int tmp = 0;
-  int j = 0;
-  for (; j < 256; j++) {
-    if (global_counter[j] != 0) {
-      tmp = global_counter[j];
-      global_counter[j] = 0;
-      j++;
-      break;
+  int total = 0;
+  for (int j = 0; j < 256; ++j) {
+    for (int block = 0; block < num_blocks; ++block) {
+      local_offsets[block].at(j) = total;
+      total += local_counts[block].at(j);
     }
   }
-  for (; j < 256; j++) {
-    int a = global_counter[j];
-    global_counter[j] = tmp;
-    tmp += a;
-  }
 
-  std::array<std::atomic<int>, 256> atomic_offsets;
-  for (int i = 0; i < 256; i++) {
-    atomic_offsets[i] = global_counter[i];
-  }
-
-  tbb::parallel_for(tbb::blocked_range<int>(0, size), [&](const tbb::blocked_range<int> &range) {
-    for (int i = range.begin(); i != range.end(); ++i) {
+  tbb::parallel_for(0, num_blocks, [&](int b) {
+    int start = b * block_size;
+    int end = std::min(start + block_size, size);
+    for (int i = start; i < end; ++i) {
       int index = byte_view[(8 * i) + byte];
-      int pos = atomic_offsets[index].fetch_add(1);
+      int pos = local_offsets[b].at(index)++; 
       out[pos] = bytes[i];
     }
   });
