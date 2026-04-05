@@ -6,6 +6,7 @@
 
 #include "papulina_y_radix_sort/common/include/common.hpp"
 #include "papulina_y_radix_sort/seq/include/ops_seq.hpp"
+#include "papulina_y_radix_sort/tbb/include/ops_tbb.hpp"
 #include "util/include/perf_test_util.hpp"
 
 namespace papulina_y_radix_sort {

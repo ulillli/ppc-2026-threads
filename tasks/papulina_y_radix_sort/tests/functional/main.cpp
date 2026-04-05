@@ -10,6 +10,7 @@
 
 #include "papulina_y_radix_sort/common/include/common.hpp"
 #include "papulina_y_radix_sort/seq/include/ops_seq.hpp"
+#include "papulina_y_radix_sort/tbb/include/ops_tbb.hpp"
 #include "util/include/func_test_util.hpp"
 #include "util/include/util.hpp"
 
