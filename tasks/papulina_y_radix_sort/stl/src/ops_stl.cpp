@@ -67,27 +67,34 @@ double PapulinaYRadixSortSTL::FromBytes(uint64_t bits) {
 }
 
 void PapulinaYRadixSortSTL::RadixSortParallel(double *arr, size_t size) {
-  unsigned int num_threads = std::max(1U, std::thread::hardware_concurrency());
-  if (size < 1000) {
-    num_threads = 1;
+  if (arr == nullptr || size == 0) {
+    return;
   }
 
-  std::vector<uint64_t> bytes(size);
+  unsigned int num_threads = std::max(1U, std::thread::hardware_concurrency());
+  if (size < 1000) {
+    num_threads = 3;
+  }
+
+  std::vector<uint64_t> bytes;
+  bytes.resize(size);
   for (size_t i = 0; i < size; ++i) {
     bytes[i] = InBytes(arr[i]);
   }
 
-  std::vector<uint64_t> temp(size);
-  uint64_t *src = bytes.data();
-  uint64_t *dst = temp.data();
+  std::vector<uint64_t> temp;
+  temp.resize(size);
+
+  uint64_t *src_ptr = bytes.data();
+  uint64_t *dst_ptr = temp.data();
 
   for (int byte_idx = 0; byte_idx < 8; ++byte_idx) {
-    ExecuteRadixPass(src, dst, size, byte_idx, num_threads);
-    std::swap(src, dst);
+    ExecuteRadixPass(src_ptr, dst_ptr, size, byte_idx, num_threads);
+    std::swap(src_ptr, dst_ptr);
   }
 
   for (size_t i = 0; i < size; ++i) {
-    arr[i] = FromBytes(src[i]);
+    arr[i] = FromBytes(src_ptr[i]);
   }
 }
 
@@ -157,4 +164,5 @@ void PapulinaYRadixSortSTL::ExecuteRadixPass(uint64_t *src, uint64_t *dst, size_
   ComputeOffsets(num_threads, local_hists, thread_pos);
   ReorderElements(src, dst, size, byte_idx, num_threads, thread_pos);
 }
+
 }  // namespace papulina_y_radix_sort
