@@ -20,7 +20,6 @@ class PapulinaYRadixSortSTL : public BaseTask {
   uint64_t InBytes(double d);
   double FromBytes(uint64_t bits);
   void RadixSortParallel(double *arr, size_t size);
-
 };
 
 }  // namespace papulina_y_radix_sort

@@ -26,7 +26,9 @@ bool PapulinaYRadixSortSTL::PreProcessingImpl() {
 
 bool PapulinaYRadixSortSTL::RunImpl() {
   size_t size = GetInput().size();
-  if (size == 0) return true;
+  if (size == 0) {
+    return true;
+  }
 
   std::vector<double> data = GetInput();
   RadixSortParallel(data.data(), size);
@@ -65,8 +67,12 @@ double PapulinaYRadixSortSTL::FromBytes(uint64_t bits) {
 
 void PapulinaYRadixSortSTL::RadixSortParallel(double *arr, size_t size) {
   int num_threads = std::thread::hardware_concurrency();
-  if (num_threads < 1) num_threads = 1;
-  if (size < 1000) num_threads = 1;
+  if (num_threads < 1) {
+    num_threads = 1;
+  }
+  if (size < 1000) {
+    num_threads = 1;
+  }
 
   std::vector<uint64_t> bytes(size);
   std::vector<uint64_t> temp(size);
@@ -93,7 +99,9 @@ void PapulinaYRadixSortSTL::RadixSortParallel(double *arr, size_t size) {
         }
       });
     }
-    for (auto &t : threads) t.join();
+    for (auto &t : threads) {
+      t.join();
+    }
     threads.clear();
 
     std::vector<int> global_histogram(256, 0);
@@ -131,7 +139,9 @@ void PapulinaYRadixSortSTL::RadixSortParallel(double *arr, size_t size) {
         }
       });
     }
-    for (auto &t : threads) t.join();
+    for (auto &t : threads) {
+      t.join();
+    }
     std::swap(src, dst);
   }
 
