@@ -2,11 +2,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
-#include <numeric>
 #include <thread>
+#include <utility>
 #include <vector>
 
+#include "papulina_y_radix_sort/common/include/common.hpp"
 namespace papulina_y_radix_sort {
 
 PapulinaYRadixSortSTL::PapulinaYRadixSortSTL(const InType &in) {
@@ -42,7 +45,6 @@ bool PapulinaYRadixSortSTL::PostProcessingImpl() {
 }
 
 uint64_t PapulinaYRadixSortSTL::InBytes(double d) {
-  const uint64_t kMask = 0x8000000000000000;
   uint64_t bits = 0;
   memcpy(&bits, &d, sizeof(double));
   if ((bits & kMask) != 0) {
@@ -54,7 +56,6 @@ uint64_t PapulinaYRadixSortSTL::InBytes(double d) {
 }
 
 double PapulinaYRadixSortSTL::FromBytes(uint64_t bits) {
-  const uint64_t kMask = 0x8000000000000000;
   double d = 0;
   if ((bits & kMask) != 0) {
     bits = bits ^ kMask;
@@ -66,82 +67,22 @@ double PapulinaYRadixSortSTL::FromBytes(uint64_t bits) {
 }
 
 void PapulinaYRadixSortSTL::RadixSortParallel(double *arr, size_t size) {
-  int num_threads = std::thread::hardware_concurrency();
-  if (num_threads < 1) {
-    num_threads = 1;
-  }
+  unsigned int num_threads = std::max(1U, std::thread::hardware_concurrency());
   if (size < 1000) {
     num_threads = 1;
   }
 
   std::vector<uint64_t> bytes(size);
-  std::vector<uint64_t> temp(size);
-
   for (size_t i = 0; i < size; ++i) {
     bytes[i] = InBytes(arr[i]);
   }
 
+  std::vector<uint64_t> temp(size);
   uint64_t *src = bytes.data();
   uint64_t *dst = temp.data();
 
-  for (int byte = 0; byte < 8; ++byte) {
-    std::vector<std::vector<int>> local_histograms(num_threads, std::vector<int>(256, 0));
-    std::vector<std::thread> threads;
-    size_t chunk_size = size / num_threads;
-
-    for (int t = 0; t < num_threads; ++t) {
-      threads.emplace_back([&, t]() {
-        size_t start = t * chunk_size;
-        size_t end = (t == num_threads - 1) ? size : (t + 1) * chunk_size;
-        unsigned char *byte_view = reinterpret_cast<unsigned char *>(src);
-        for (size_t i = start; i < end; ++i) {
-          local_histograms[t][byte_view[i * 8 + byte]]++;
-        }
-      });
-    }
-    for (auto &t : threads) {
-      t.join();
-    }
-    threads.clear();
-
-    std::vector<int> global_histogram(256, 0);
-    for (int b = 0; b < 256; ++b) {
-      for (int t = 0; t < num_threads; ++t) {
-        global_histogram[b] += local_histograms[t][b];
-      }
-    }
-
-    std::vector<int> global_offsets(256, 0);
-    int current_offset = 0;
-    for (int b = 0; b < 256; ++b) {
-      int count = global_histogram[b];
-      global_histogram[b] = current_offset;
-      current_offset += count;
-    }
-
-    std::vector<std::vector<int>> thread_bucket_offsets(num_threads, std::vector<int>(256, 0));
-    for (int b = 0; b < 256; ++b) {
-      int running_offset = global_histogram[b];
-      for (int t = 0; t < num_threads; ++t) {
-        thread_bucket_offsets[t][b] = running_offset;
-        running_offset += local_histograms[t][b];
-      }
-    }
-
-    for (int t = 0; t < num_threads; ++t) {
-      threads.emplace_back([&, t]() {
-        size_t start = t * chunk_size;
-        size_t end = (t == num_threads - 1) ? size : (t + 1) * chunk_size;
-        unsigned char *byte_view = reinterpret_cast<unsigned char *>(src);
-        for (size_t i = start; i < end; ++i) {
-          int bucket = byte_view[i * 8 + byte];
-          dst[thread_bucket_offsets[t][bucket]++] = src[i];
-        }
-      });
-    }
-    for (auto &t : threads) {
-      t.join();
-    }
+  for (int byte_idx = 0; byte_idx < 8; ++byte_idx) {
+    ExecuteRadixPass(src, dst, size, byte_idx, num_threads);
     std::swap(src, dst);
   }
 
@@ -150,4 +91,70 @@ void PapulinaYRadixSortSTL::RadixSortParallel(double *arr, size_t size) {
   }
 }
 
+std::pair<size_t, size_t> PapulinaYRadixSortSTL::GetThreadRange(size_t size, unsigned int num_threads,
+                                                                unsigned int thread_idx) {
+  size_t chunk = size / num_threads;
+  size_t start = thread_idx * chunk;
+  size_t end = (thread_idx == num_threads - 1) ? size : (thread_idx + 1) * chunk;
+  return {start, end};
+}
+
+void PapulinaYRadixSortSTL::CountFrequencies(const uint64_t *src, size_t size, int byte_idx, unsigned int num_threads,
+                                             std::vector<std::vector<size_t>> &local_hists) {
+  std::vector<std::thread> workers;
+  workers.reserve(num_threads);
+  for (unsigned int thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+    workers.emplace_back([&, thread_idx]() {
+      auto range = GetThreadRange(size, num_threads, thread_idx);
+      const auto *byte_view = reinterpret_cast<const unsigned char *>(src);
+      for (size_t i = range.first; i < range.second; ++i) {
+        local_hists[thread_idx][byte_view[(i * 8) + byte_idx]]++;
+      }
+    });
+  }
+  for (auto &worker : workers) {
+    worker.join();
+  }
+}
+
+void PapulinaYRadixSortSTL::ComputeOffsets(unsigned int num_threads,
+                                           const std::vector<std::vector<size_t>> &local_hists,
+                                           std::vector<std::vector<size_t>> &thread_pos) {
+  size_t total = 0;
+  for (int bucket = 0; bucket < 256; ++bucket) {
+    for (unsigned int thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+      thread_pos[thread_idx][bucket] = total;
+      total += local_hists[thread_idx][bucket];
+    }
+  }
+}
+
+void PapulinaYRadixSortSTL::ReorderElements(const uint64_t *src, uint64_t *dst, size_t size, int byte_idx,
+                                            unsigned int num_threads, std::vector<std::vector<size_t>> &thread_pos) {
+  std::vector<std::thread> workers;
+  workers.reserve(num_threads);
+  for (unsigned int thread_idx = 0; thread_idx < num_threads; ++thread_idx) {
+    workers.emplace_back([&, thread_idx]() {
+      auto range = GetThreadRange(size, num_threads, thread_idx);
+      const auto *byte_view = reinterpret_cast<const unsigned char *>(src);
+      for (size_t i = range.first; i < range.second; ++i) {
+        int bucket = byte_view[(i * 8) + byte_idx];
+        dst[thread_pos[thread_idx][bucket]++] = src[i];
+      }
+    });
+  }
+  for (auto &worker : workers) {
+    worker.join();
+  }
+}
+
+void PapulinaYRadixSortSTL::ExecuteRadixPass(uint64_t *src, uint64_t *dst, size_t size, int byte_idx,
+                                             unsigned int num_threads) {
+  std::vector<std::vector<size_t>> local_hists(num_threads, std::vector<size_t>(256, 0));
+  std::vector<std::vector<size_t>> thread_pos(num_threads, std::vector<size_t>(256, 0));
+
+  CountFrequencies(src, size, byte_idx, num_threads, local_hists);
+  ComputeOffsets(num_threads, local_hists, thread_pos);
+  ReorderElements(src, dst, size, byte_idx, num_threads, thread_pos);
+}
 }  // namespace papulina_y_radix_sort
